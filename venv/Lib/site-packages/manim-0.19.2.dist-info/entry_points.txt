@@ -1,0 +1,3 @@
+[console_scripts]
+manim = manim.__main__:main
+manimce = manim.__main__:main

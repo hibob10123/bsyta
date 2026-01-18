@@ -1,0 +1,15 @@
+# --- Web Scraping ---
+playwright         # For exact screenshotting
+praw               # Reddit API wrapper
+requests           # For simple API calls (BrawlAPI)
+
+# --- Analysis & Logic ---
+spacy              # NLP for reading your script
+openai             # For "smart" decisions (sentiment analysis)
+python-dotenv      # To manage your secrets/keys securely
+
+# --- Media Generation ---
+moviepy            # The video editing engine
+matplotlib         # Graphing
+pillow             # Image processing (resizing/cropping)
+manim              # Advanced math animations
