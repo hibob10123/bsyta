@@ -1,0 +1,116 @@
+video:
+  resolution: [1920, 1080]
+  fps: 30
+  output_dir: "data/output"
+
+# Voice settings (ElevenLabs)
+voice:
+  voice_id: "L0Dsvb3SLTyegXwtm47J" 
+  model_id: "eleven_multilingual_v2"
+  # Popular Voice IDs:
+  # L0Dsvb3SLTyegXwtm47J - British male (conversational)
+  # FrejFnPpRNrX6s6raOSX - Australian (calmer)
+  # zCgijgIKIMkFHnzXcCva - American (energetic)
+  # PIGsltMj3gFMR34aFDI3 - Calm
+  # B8gJV1IhpuegLxdpXFOE - Current selection
+  # TmNe0cCqkZBMwPWOd3RD - mellowz
+  # G17SuINrv2H9FC6nvetn - birtish calm
+  # lnieQLGTodpbhjpZtg1k - assertive
+  # x8xv0H8Ako6Iw3cKXLoC - Sundee 
+  # UaYTS0wayjmO9KD1LR4R - Count down video guy
+  # jqcCZkN6Knx8BJ5TBdYR - girl
+  
+  
+scenes:
+  gameplay_opacity: 0.4
+  icon_max_per_scene: 12
+  reddit_slide_duration: 0.7
+  graph_hold_time: 3.0
+  icon_size: 300
+  reddit_size: 900
+  
+  # Timing adjustment - negative values make elements appear EARLIER
+  # If icons/text feel delayed, use negative value like -0.3 or -0.5
+  sync_offset: -0.3  # Shift all visual elements 0.4s earlier
+
+sound_effects:
+  whoosh: "data/sfx/whoosh.mp3"
+  long_whoosh: "data/sfx/long_whoosh.mp3"
+  click: "data/sfx/computer-mouse-click-02-383961.mp3"
+  vineboom: "data/sfx/vineboom.mp3"
+  booing: "data/sfx/booing.mp3"
+  ding: "data/sfx/ding.mp3"
+  whoosh2: "data/sfx/whoosh2.mp3"
+  transition: "data/sfx/long_whoosh.mp3"
+  icon_appear: "data/sfx/whoosh.mp3"  # For icon appearances
+
+background_music:
+  enabled: true
+  path: "data/sfx/(SONG1).mp3"  # Default/primary music file
+  volume: 0.2  # Volume relative to voiceover (0.0-1.0, lower = quieter)
+  # Additional music files for multi-part videos (rotates through these)
+  music_files:
+    - "data/sfx/(SONG1).mp3"
+    - "data/sfx/(SONG2).mp3"
+    - "data/sfx/(SONG3).mp3"
+
+# Serper API (for icon searches - better quality, no rate limits)
+serper_api:
+  enabled: true  # Set to false to use DuckDuckGo fallback
+  api_key: "c01f645b233d8f1f74c06594781b03997293a163"  # Get free key at https://serper.dev/ (2,500 searches/month free)
+  # After signing up, paste your API key above
+
+llm:
+  model: "claude-3-5-sonnet-20240620"
+  max_tokens: 4000
+  temperature: 0.7
+
+pipeline:
+  # Enable/disable pipeline steps
+  do_research_assist: false  # Set to true to use research assistant
+  do_reddit_search: true    # Auto-search Reddit for claims
+  do_graph_generation: true  # Generate graphs from statistics
+  do_asset_gathering: true   # Find icons for keywords
+  
+  # Search Context (Customizable)
+  # This is added to every icon search query to ensure relevant results
+  # Example: "Clash Royale", "Brawl Stars", "Minecraft"
+  search_context: "Clash Royale"
+  
+  # Reddit settings
+  reddit_max_posts: 8
+  reddit_subreddit: "BrawlStars"
+  
+  # Speech settings
+  words_per_minute: 150  # For duration estimation
+
+paths:
+  gameplay_video: "data/assets/gameplay.mp4"  # Primary gameplay file
+  # Additional gameplay files for multi-part videos (rotates through these)
+  # Add more files named gameplay_2.mp4, gameplay_3.mp4, etc. in data/assets/
+  # Or list them explicitly below:
+  gameplay_files:
+    - "data/assets/gameplay.mp4"
+    - "data/assets/gameplay_2.mp4"
+    # - "data/assets/gameplay_3.mp4"
+  
+  # Alternative backgrounds (cycles with gameplay for visual variety)
+  # Set to empty list [] to disable cycling
+  alternate_backgrounds:
+    - "data/assets/paperbackground.mp4"
+  
+  # How often to use alternate backgrounds (0.0-1.0)
+  # 0.3 = 30% of scenes use alternate background, 70% gameplay
+  alternate_background_chance: 0.35
+  icons_dir: "data/assets/icons"
+  output_dir: "data/output"
+  temp_dir: "data/temp"
+  scripts_dir: "data/scripts"
+  sfx_dir: "data/sfx"
+
+# Multi-part video settings
+multipart:
+  enabled: true  # Automatically detect and process script sections
+  section_title_duration: 2.0  # Duration of section title cards
+  transition_duration: 0.5  # Fade duration between parts
+  show_title_cards: true  # Show title cards between sections

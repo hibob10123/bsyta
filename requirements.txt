@@ -1,11 +1,13 @@
 # --- Web Scraping ---
 playwright         # For exact screenshotting
+playwright-stealth # For avoiding Reddit bot detection
 praw               # Reddit API wrapper
 requests           # For simple API calls (BrawlAPI)
 
 # --- Analysis & Logic ---
 spacy              # NLP for reading your script
 openai             # For "smart" decisions (sentiment analysis)
+anthropic          # Claude API for LLM-powered analysis
 python-dotenv      # To manage your secrets/keys securely
 
 # --- Media Generation ---

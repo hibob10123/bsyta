@@ -8,7 +8,7 @@ if not hasattr(PIL.Image, 'ANTIALIAS'):
 
 from moviepy.editor import *
 from moviepy.config import change_settings
-from voiceover import generate_voiceover
+from engine.voiceover import generate_voiceover
 
 # --- CONFIGURATION (YOUR MAGICK PATH) ---
 IMAGEMAGICK_BINARY = r"C:\Program Files\ImageMagick-7.1.2-Q16-HDRI\magick.exe"

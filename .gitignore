@@ -1,2 +1,11 @@
 # Data folder
 data/
+.env
+# Ignore virtual environment directory
+venv/
+.venv/
+
+# Optional: You can add other common Python ignores as well
+__pycache__/
+*.pyc
+.env
