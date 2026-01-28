@@ -334,7 +334,9 @@ SCENE TYPES:
 3. reddit_evidence: Full-screen Reddit post. Use for community opinions.
 4. youtube_evidence: Full-screen YouTube video card (thumbnail + title). Use for creator/pro-player video evidence.
 5. mixed_evidence: Dimmed gameplay with a combination of graphs, Reddit posts, or YouTube cards.
-6. text_statement: Bold text revealed word-by-word on a black background. Use for dramatic emphasis.
+6. text_statement: Bold WHITE text revealed word-by-word on BLACK background. Use for SHORT, IMPACTFUL sentences (3-8 words).
+   - Examples: "And it gets worse.", "This changed everything.", "Here's the problem."
+   - LIMIT: 1-2 per section. Don't overuse.
 7. scrolling_comments: A feed of community reactions scrolling up.
 8. split_comparison: Screen split in half (A vs B) with vertical divider. PERFECT for "Old vs New", "Buff vs Nerf", or comparing two brawlers.
    - Use 'elements' with 'position': 'left' and 'position': 'right'.
@@ -464,8 +466,11 @@ AVAILABLE SCENE TYPES:
 2. **data_graph**: BLACK background with animated graph (pure data visualization)
 3. **reddit_evidence**: WHITE background with Reddit post screenshot (community evidence)
 4. **youtube_evidence**: DARK background with YouTube video card (thumbnail + title). Use for creator/pro evidence.
-5. **text_statement**: Colored background with bold text (dramatic statements, chapter breaks)
-   - Use for: Dramatic quotes, key statements, chapter dividers
+5. **text_statement**: Black background with bold WHITE text appearing word-by-word (dramatic statements, impactful moments)
+   - Use for: Short, punchy sentences with emotional impact (3-8 words max)
+   - Examples: "And it gets worse.", "This changed everything.", "Here's the problem.", "But not anymore."
+   - LIMIT: Use SPARINGLY (1-2 per section max, plus the opening title card)
+   - The word-by-word reveal creates dramatic emphasis with click sound effects
 6. **scrolling_comments**: Scrolling Reddit comments feed (multiple community reactions)
    - Use for: Showing many community reactions at once
 7. **split_comparison**: Screen split in half (A vs B) with vertical divider.
@@ -519,7 +524,12 @@ CRITICAL TIMING RULES:
      * youtube_index 0 -> ONE scene. youtube_index 1 -> ONE different scene. etc.
      * Shows thumbnail + title + channel name
      * (10-15% of scenes)
-   - **text_statement**: Bold text on colored bg (3-6s). Use for dramatic moments, quotes, chapter breaks. (5-10% of scenes)
+   - **text_statement**: Black bg with WHITE text word-by-word reveal (3-6s). Use for SHORT, IMPACTFUL sentences.
+     * Examples of GOOD candidates: "And it gets worse.", "This changed everything.", "Here's the kicker.", "But not anymore."
+     * Must be SHORT (3-8 words max) - longer text doesn't work well with word-by-word reveal
+     * Use for transition moments, dramatic reveals, or emotional beats
+     * LIMIT: 1-2 per section (plus opening title card). DON'T overuse - it loses impact.
+     * (5-10% of scenes)
    - **scrolling_comments**: Scrolling comment feed (5-8s). Use when showing many community reactions at once. (5-10% of scenes)
    - **broll**: Cinematic image with pan (4-8s). Use for visual variety, establishing shots, transitions. (5-10% of scenes)
    
@@ -557,7 +567,21 @@ CRITICAL TIMING RULES:
      * "84 million" (text) at 3.5s → {{"type": "text", "text": "84 million", "timestamp": 3.5}}
      * "record" (icon) at 3.2s → {{"type": "icon", "keyword": "record", "timestamp": 3.2}}
 
-6. **GRAPH/REDDIT SCENES - CRITICAL TIMING**:
+6. **TEXT_STATEMENT SCENES - USE FOR DRAMATIC IMPACT**:
+   - Scene 1 is ALWAYS a text_statement (title card with first sentence)
+   - You can add 1-2 MORE text_statement scenes per section for SHORT, IMPACTFUL sentences
+   - PERFECT candidates (3-8 words):
+     * Transitional beats: "And it gets worse.", "But then something changed.", "Here's the kicker."
+     * Dramatic reveals: "This is the problem.", "The truth is simple.", "It gets worse."
+     * Emotional beats: "The community exploded.", "Everything changed.", "They were furious."
+   - BAD candidates (too long or not impactful):
+     * Long sentences (>8 words) - word-by-word reveal gets tedious
+     * Technical details - keep those in gameplay with icons
+     * Statistics - those need graphs or text overlays, not full scenes
+   - Duration: 3-5s (short and punchy)
+   - LIMIT: Maximum 1-2 per section beyond the opening title card
+
+7. **GRAPH/REDDIT SCENES - CRITICAL TIMING**:
    - **data_graph**: Place EXACTLY when the numbers are spoken in the script
      * Look for sentences with "from X to Y", "X in 2022, Y in 2023", "X%, Y%, Z%"
      * The graph should START right as the narrator begins saying the numbers
@@ -571,18 +595,18 @@ CRITICAL TIMING RULES:
    - These should be SEPARATE scenes from gameplay_icons
    - **If statistics appear early (first 10s), PRIORITIZE data_graph as scene 2 or 3**
 
-7. **QUANTITY - ABSOLUTELY CRITICAL - THIS IS THE #1 PRIORITY**:
-   - 🚨 YOU MUST USE AT LEAST 95% OF KEYWORDS! That means use {max(15, int(len(keywords_with_context) * 0.95))}+ out of {len(keywords_with_context)} available!
-   - 🚨 Aim for 7-13 elements (icons + text) per gameplay_icons scene - BE GENEROUS WITH VISUALS!
-   - Every major concept, action, and entity mentioned in the script MUST have a visual element
+8. **QUANTITY - BALANCED VISUAL DENSITY**:
+   - 🎯 TARGET: Use 70-80% of available keywords. That means use {max(12, int(len(keywords_with_context) * 0.75))}+ out of {len(keywords_with_context)} available
+   - 🎯 Aim for 4-8 elements (icons + text) per gameplay_icons scene - keep it balanced, not overwhelming
+   - Focus on the MOST IMPORTANT concepts, actions, and entities mentioned in the script
    - Mix text and icons naturally based on display_type
-   - DON'T leave keywords unused - the user specifically extracted these for visual representation!
+   - Prioritize quality over quantity - use keywords that add value, not just to fill space
    - Example: A 30-second script with 15 keywords should use 14-15 of them, not just 5-6
    - 🚨 IF YOU USE LESS THAN 85% OF KEYWORDS, THE VIDEO WILL BE REJECTED!
    - Rich visual elements = engaging video. Sparse visuals = boring video.
    - MORE ICONS = BETTER! Users want constant visual stimulation!
 
-8. **KEYWORD DISTRIBUTION - PREVENT EMPTY GAPS**:
+9. **KEYWORD DISTRIBUTION - PREVENT EMPTY GAPS**:
    - 🚨 CRITICAL: Keywords MUST be distributed EVENLY across the ENTIRE video duration!
    - Do NOT front-load all icons in the first 30 seconds - this is WRONG!
    - For a {duration:.0f}s video, you should have icons appearing throughout:
@@ -1066,12 +1090,20 @@ Rich, frequent visual elements are ESSENTIAL for an engaging video. Be generous 
                 # Clear other elements to keep it clean, but keep them in metadata if needed
                 # Actually, we just added support for icons in text statements, so we can keep them!
 
-        # === FIX 0.1: Only the FIRST scene should be a text_statement ===
-        # The user wants gameplay + icons after the title card
+        # === FIX 0.1: Allow limited text_statement scenes for dramatic impact ===
+        # Scene 1 is always the title card (text_statement)
+        # Additional text_statement scenes are allowed (1-2 per section) for impactful moments
+        # But prevent excessive use (>3 total beyond title card)
+        text_statement_count = 0
         for scene in timeline['scenes'][1:]:
             if scene.get('type') == 'text_statement':
-                print(f"[PLANNER] Converting text_statement scene {scene.get('scene_number')} to gameplay_icons")
-                scene['type'] = 'gameplay_icons'
+                text_statement_count += 1
+                # Allow up to 3 impactful text statements beyond the title card
+                if text_statement_count > 3:
+                    print(f"[PLANNER] Converting excess text_statement scene {scene.get('scene_number')} to gameplay_icons (limit: 3)")
+                    scene['type'] = 'gameplay_icons'
+                else:
+                    print(f"[PLANNER] Keeping text_statement scene {scene.get('scene_number')} for dramatic impact")
 
         # === FIX 0.2: Mixed evidence scenes are not allowed ===
         # Convert mixed_evidence into a pure evidence scene if possible, otherwise gameplay
@@ -1496,8 +1528,8 @@ Rich, frequent visual elements are ESSENTIAL for an engaging video. Be generous 
             if scene.get('type') == 'gameplay_icons':
                 num_elements = len(scene.get('elements', []))
                 scene_duration = scene['end_time'] - scene['start_time']
-                # Expect at least 1 element per 4 seconds
-                expected_elements = max(2, int(scene_duration / 4))
+                # Expect at least 1 element per 5 seconds (reduced density)
+                expected_elements = max(2, int(scene_duration / 5))
                 
                 if num_elements < expected_elements:
                     deficit = expected_elements - num_elements
@@ -1604,19 +1636,19 @@ Rich, frequent visual elements are ESSENTIAL for an engaging video. Be generous 
             print("[PLANNER] All keywords used - no more available for filling")
             return timeline
         
-        # Find scenes that need filling - MORE AGGRESSIVE to prevent boring gaps
-        # ANY gameplay scene with < 1 element per 2.5 seconds should be filled
+        # Find scenes that need filling - EXTREMELY AGGRESSIVE to prevent boring gaps
+        # ANY gameplay scene with < 1 element per 2.0 seconds should be filled
         scenes_to_fill = []
         for scene in timeline.get('scenes', []):
             if scene.get('type') in ['gameplay_icons', 'gameplay_only']:
                 duration = scene['end_time'] - scene['start_time']
                 num_elements = len(scene.get('elements', []))
                 
-                # Calculate expected elements - MORE AGGRESSIVE: 1 per 2.5 seconds (was 4)
-                expected_elements = max(2, int(duration / 2.5))
+                # Calculate expected elements - MODERATE: 1 per 3.0 seconds (35% reduction)
+                expected_elements = max(2, int(duration / 3.0))
                 # Intro boost: more elements in the first 10 seconds for stronger hook
                 if scene.get('start_time', 0) < 10.0:
-                    expected_elements = max(expected_elements, int(duration / 1.5))
+                    expected_elements = max(expected_elements, int(duration / 1.8))
                 
                 # Fill ANY scene with gaps, not just long ones (lowered from 8s to 4s)
                 if duration > 4 and num_elements < expected_elements:
@@ -1749,7 +1781,7 @@ Rich, frequent visual elements are ESSENTIAL for an engaging video. Be generous 
                 break
             if 'elements' not in scene or len(scene['elements']) < 1:
                 continue
-            gap_threshold = 2.0 if scene.get('start_time', 0) < 10.0 else 3.0  # seconds without icons = gap
+            gap_threshold = 2.0 if scene.get('start_time', 0) < 10.0 else 3.0  # seconds without icons = gap (moderate density)
 
             scene_start = scene['start_time']
             scene_end = scene['end_time']
@@ -1776,7 +1808,7 @@ Rich, frequent visual elements are ESSENTIAL for an engaging video. Be generous 
                 gap_len = gap_end - gap_start
                 if gap_len < gap_threshold:
                     continue
-                num_to_add = max(1, int(gap_len / 2.5))
+                num_to_add = max(1, int(gap_len / 3.0))  # Reduced from 2.0 to 3.0 for less density
                 num_to_add = min(num_to_add, len(unused_keywords))
                 step = gap_len / (num_to_add + 1)
 
@@ -1878,8 +1910,14 @@ Rich, frequent visual elements are ESSENTIAL for an engaging video. Be generous 
             sentence_lookup[sent['text'].lower().strip()] = sent
 
         # Detect if the script itself has explicit part markers
+        # Check the ORIGINAL timeline scenes/segments, not the sentence_timings
+        # (sentence_timings may have markers stripped by strip_section_markers)
         import re
-        script_full_text = " ".join([s.get('text', '') for s in sentence_timings])
+        script_full_text = " ".join([s.get('text', '') for s in timeline.get('scenes', [])])
+        # Also check segment text if available
+        if timeline.get('segments'):
+            script_full_text += " " + " ".join([s.get('text', '') for s in timeline['segments']])
+        
         script_has_part_markers = bool(re.search(
             r'\bpart\s*(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b',
             script_full_text,
@@ -2185,7 +2223,8 @@ Rich, frequent visual elements are ESSENTIAL for an engaging video. Be generous 
         
         print(f"[PLANNER] Collected {len(all_elements)} icon/text/meme elements to redistribute")
         
-        # Re-assign each element to the CORRECT gameplay_icons scene
+        # Re-assign each element to ANY scene based on timestamp
+        # Icons can overlay on evidence scenes (Reddit/YouTube/Graph) - they act as overlays!
         for element in all_elements:
             ts = element.get('timestamp', 0)
             assigned = False
@@ -2194,15 +2233,12 @@ Rich, frequent visual elements are ESSENTIAL for an engaging video. Be generous 
                 scene_type = scene.get('type', 'gameplay_icons')
                 scene_num = scene.get('scene_number', 1)
                 
-                # Skip scene 1 (title card)
+                # Skip scene 1 (title card) - it should stay clean
                 if scene_num == 1:
                     continue
                 
-                # Skip evidence scenes - they should NOT receive icons
-                if scene_type in EVIDENCE_SCENE_TYPES:
-                    continue
-                
                 # Check if timestamp falls in this scene
+                # Icons CAN appear on ALL scene types (gameplay, reddit, youtube, graph)
                 if scene['start_time'] <= ts < scene['end_time']:
                     if 'elements' not in scene:
                         scene['elements'] = []
@@ -2211,15 +2247,15 @@ Rich, frequent visual elements are ESSENTIAL for an engaging video. Be generous 
                     break
             
             if not assigned:
-                # Find the nearest gameplay_icons scene for this element
+                # Find the nearest scene for this element (can be ANY scene type now)
                 best_scene = None
                 best_distance = float('inf')
                 
                 for scene in timeline['scenes']:
-                    scene_type = scene.get('type', 'gameplay_icons')
                     scene_num = scene.get('scene_number', 1)
                     
-                    if scene_num == 1 or scene_type in EVIDENCE_SCENE_TYPES:
+                    # Skip title card only
+                    if scene_num == 1:
                         continue
                     
                     # Calculate distance to scene
@@ -2240,12 +2276,36 @@ Rich, frequent visual elements are ESSENTIAL for an engaging video. Be generous 
                     best_scene['elements'].append(element)
                 else:
                     elem_kw = element.get('keyword', element.get('text', 'element'))
-                    print(f"[PLANNER] WARNING: No gameplay scene found for '{elem_kw}' at {ts:.2f}s - element dropped")
+                    print(f"[PLANNER] WARNING: No scene found for '{elem_kw}' at {ts:.2f}s - element dropped")
         
-        # Sort elements in each scene
+        # Sort elements in each scene and ensure minimum spacing to prevent spam
+        MIN_ICON_SPACING = 0.4  # Minimum 400ms between icons in same scene
+        
         for scene in timeline['scenes']:
-            if 'elements' in scene:
+            if 'elements' in scene and len(scene['elements']) > 1:
+                # Sort by timestamp
                 scene['elements'].sort(key=lambda e: e.get('timestamp', 0))
+                
+                # Enforce minimum spacing between icons
+                prev_ts = scene['elements'][0].get('timestamp', 0)
+                for i in range(1, len(scene['elements'])):
+                    curr_elem = scene['elements'][i]
+                    curr_ts = curr_elem.get('timestamp', 0)
+                    
+                    # If too close to previous element, push it forward
+                    if curr_ts - prev_ts < MIN_ICON_SPACING:
+                        new_ts = prev_ts + MIN_ICON_SPACING
+                        
+                        # Make sure we don't push past scene end
+                        if new_ts < scene['end_time'] - 0.1:
+                            elem_kw = curr_elem.get('keyword', curr_elem.get('text', 'element'))[:30]
+                            print(f"   [SPACING] Icon '{elem_kw}' too close ({curr_ts:.2f}s), shifting to {new_ts:.2f}s")
+                            curr_elem['timestamp'] = new_ts
+                            prev_ts = new_ts
+                        else:
+                            prev_ts = curr_ts
+                    else:
+                        prev_ts = curr_ts
 
         # FIX: Ensure scenes don't overlap - sequential scenes should stay sequential
         # Sort scenes by original scene_number to preserve intended order
@@ -2424,6 +2484,10 @@ Rich, frequent visual elements are ESSENTIAL for an engaging video. Be generous 
                 if sentence_timings:
                     scene['start_time'] = 0.0
                     scene['end_time'] = sentence_timings[0]['end_time']
+                    # CRITICAL FIX: Set statement_text to the ACTUAL first sentence
+                    scene['statement_text'] = sentence_timings[0]['text']
+                    scene['script_text'] = sentence_timings[0]['text']
+                    print(f"[PLANNER] Title card set to first sentence: \"{sentence_timings[0]['text'][:60]}...\"")
                 title_card_end = scene['end_time']
                 break
 
@@ -2565,10 +2629,14 @@ Rich, frequent visual elements are ESSENTIAL for an engaging video. Be generous 
                         print(f"[PLANNER] YouTube card '{title[:30]}' matches PART {part_num} but we are in SECTION {section_number} - skipping")
                         continue
                     
-                    # If the script has no explicit part markers, don't force PART-based placement
+                    # If section_number is None (single-part mode), trust the filtering done upstream
+                    # The video made it through PART_TO_GENERATE filtering in test script, so use it
+                    # We only skip if in multipart mode AND script truly has no part markers
                     if section_number is None and not script_has_part_markers:
-                        print(f"[PLANNER] YouTube card '{title[:30]}' has PART {part_num} but script has no part markers - skipping")
-                        continue
+                        # In single-part mode without explicit markers, still try to use the video
+                        # It got here through explicit filtering, so the user wants it
+                        print(f"[PLANNER] YouTube card '{title[:30]}' has PART {part_num} tag - using despite no script markers (single-part mode)")
+                        # Don't continue - fall through to place it
                         
                     # Find first segment in that part (assuming 1-indexed segments roughly map to parts)
                     # suele ser 3 segmentos por parte
@@ -2579,8 +2647,14 @@ Rich, frequent visual elements are ESSENTIAL for an engaging video. Be generous 
                             break
                     
                     if seg_num is None:
-                        # Crude estimate: part 1 = seg 1-3, part 2 = seg 4-6, etc.
-                        seg_num = (part_num - 1) * 3 + 1
+                        # If in single-part mode (section_number is None), use the first available segment
+                        # The video was explicitly filtered for this part, so we should use it
+                        if section_number is None and segment_times:
+                            seg_num = min(segment_times.keys())
+                            print(f"[PLANNER] YouTube card '{title[:30]}' has PART {part_num} tag - placing in first segment (single-part mode)")
+                        else:
+                            # Multipart mode: Crude estimate: part 1 = seg 1-3, part 2 = seg 4-6, etc.
+                            seg_num = (part_num - 1) * 3 + 1
                     
                     if seg_num not in segment_times:
                         print(f"[PLANNER] YouTube card '{title[:30]}' PART {part_num} has no matching segment in script - skipping")
@@ -2592,15 +2666,18 @@ Rich, frequent visual elements are ESSENTIAL for an engaging video. Be generous 
                     print(f"[PLANNER] YouTube card '{title[:30]}' matched via {part_match.group(0)}")
 
             if start is None:
-                # Final Fallback: If it's mandatory or has content, don't skip it, just put it somewhere
-                # but only if we really have to. For now, let's keep it skipped if no match found.
-                print(f"[PLANNER] WARNING: No script match for YouTube card '{title[:40]}...' - skipping")
-                continue
-
-            if start is None:
-                # Skip if we can't match - better to omit than show wrong evidence
-                print(f"[PLANNER] WARNING: No script match for YouTube card '{title[:40]}...' - skipping")
-                continue
+                # Final Fallback: In single-part mode, place the video somewhere rather than skipping
+                # The video was explicitly included by the user, so we should show it
+                if section_number is None and segment_times:
+                    # Place in the middle of the video
+                    mid_time = actual_duration / 2
+                    start = mid_time - 3.0  # Start 3s before midpoint
+                    end = mid_time + 3.0    # End 3s after midpoint
+                    print(f"[PLANNER] YouTube card '{title[:40]}...' has no clear match - placing at middle of video (single-part mode fallback)")
+                else:
+                    # In multipart mode or no segments, skip it
+                    print(f"[PLANNER] WARNING: No script match for YouTube card '{title[:40]}...' - skipping")
+                    continue
 
             start = max(title_card_end + 0.1, start)
             base_end = end if end is not None else start + 4.0

@@ -13,21 +13,27 @@ class YouTubeIntelligence:
     def __init__(self):
         pass
     
-    def generate_youtube_graphic(self, video_data, output_path=None):
+    def generate_youtube_graphic(self, video_data, output_path=None, force_regenerate=False):
         """
         Generate a YouTube video evidence card (thumbnail + title + channel)
         """
         if output_path is None:
             timestamp = int(time.time())
             output_path = f"data/assets/youtube_{timestamp}.png"
-            
+
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        
+
+        # CHECK CACHE: Skip if graphic already exists
+        if not force_regenerate and os.path.exists(output_path):
+            print(f"[YOUTUBE] ✓ CACHE HIT: Graphic already exists at {output_path}")
+            print(f"[YOUTUBE] ✓ Skipping generation (saves time)")
+            return output_path
+
         url = video_data.get('url', '')
         title = video_data.get('title', 'YouTube Video')
         channel = video_data.get('channel', 'YouTube Channel')
         views = video_data.get('views', 'Evidence')
-        
+
         print(f"[YOUTUBE] Generating graphic for: {title} by {channel}")
         
         # YouTube Dark Mode style

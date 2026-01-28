@@ -102,7 +102,7 @@ def create_pro_scene(brawler_name, scene_name, evidence_path):
 
     # F. RENDER
     output_path = "data/temp/pro_render.mp4"
-    final_clip.write_videofile(output_path, fps=30, codec="libx264")
+    final_clip.write_videofile(output_path, fps=30, codec="h264_nvenc")
     print(f"✅ Pro video saved to {output_path}")
 
 if __name__ == "__main__":

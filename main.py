@@ -101,6 +101,13 @@ class VideoAutomationPipeline:
         print("\n" + "="*70)
         print("[STEP 2/8] Gathering Reddit evidence...")
         print("="*70)
+        
+        # Debug: Show what was passed in
+        if reddit_posts:
+            print(f"[DEBUG] Received {len(reddit_posts)} Reddit posts from test script")
+        else:
+            print(f"[DEBUG] No Reddit posts provided (reddit_posts is None or empty)")
+        
         reddit_posts_raw = []
         
         # Handle user-provided posts (can be URLs or dicts with descriptions)
@@ -199,7 +206,19 @@ class VideoAutomationPipeline:
         
         # Screenshot Reddit posts (only high-relevance matched posts)
         reddit_screenshots = []
-        posts_to_screenshot = [p for p in matched_posts if p.get('relevance_score', 0) >= 6][:5]  # Top 5 with score >= 6
+        
+        # Debug: Show all matched posts and their scores
+        if matched_posts:
+            print(f"\n[DEBUG] Matched {len(matched_posts)} posts with scores:")
+            for i, p in enumerate(matched_posts):
+                score = p.get('relevance_score', 0)
+                desc = p.get('description', 'No description')[:60]
+                print(f"   Post {i+1}: Score {score}/10 - {desc}...")
+        
+        # Lower threshold to 4 (was 6) and take top 5
+        posts_to_screenshot = [p for p in matched_posts if p.get('relevance_score', 0) >= 4][:5]
+        
+        print(f"\n[REDDIT] {len(posts_to_screenshot)}/{len(matched_posts)} posts qualify for screenshots (score >= 4)")
         
         for i, post in enumerate(posts_to_screenshot):
             if 'url' in post and post['url']:
@@ -216,6 +235,8 @@ class VideoAutomationPipeline:
                         'matched_segment': post.get('matched_segment', 1),
                         'relevance_score': post.get('relevance_score', 0)
                     })
+        
+        print(f"[REDDIT] Successfully captured {len(reddit_screenshots)} screenshots")
         
         # STEP 3: Generate Graphs (with metadata for intelligent placement)
         print("\n" + "="*70)
@@ -574,19 +595,42 @@ class VideoAutomationPipeline:
                 section_reddit = None
                 section_youtube = None
                 
+                section_num = i + 1
+                
                 if reddit_posts:
-                    # Give each section ~1/3 of posts (min 2 per section if available)
-                    posts_per_section = max(2, len(reddit_posts) // len(sections))
-                    start_idx = i * posts_per_section
-                    end_idx = start_idx + posts_per_section
-                    section_reddit = reddit_posts[start_idx:end_idx] if start_idx < len(reddit_posts) else None
+                    # CRITICAL FIX: Check if posts are pre-filtered for this section
+                    # If ANY post has "(PART X)" in description matching section_num, use all posts
+                    has_part_tags = any(f"(PART {section_num})" in post.get('description', '').upper() for post in reddit_posts)
+                    
+                    if has_part_tags:
+                        # Posts are already filtered for this section - use them all
+                        section_reddit = reddit_posts
+                        print(f"[MULTIPART] Using {len(reddit_posts)} pre-filtered Reddit posts for Part {section_num}")
+                    else:
+                        # No part tags - distribute evenly across all sections
+                        posts_per_section = max(2, len(reddit_posts) // len(sections))
+                        start_idx = i * posts_per_section
+                        end_idx = start_idx + posts_per_section
+                        section_reddit = reddit_posts[start_idx:end_idx] if start_idx < len(reddit_posts) else None
+                        if section_reddit:
+                            print(f"[MULTIPART] Distributing {len(section_reddit)} Reddit posts to Part {section_num}")
                 
                 if youtube_videos:
-                    # Give each section ~1/3 of videos (min 1 per section if available)
-                    videos_per_section = max(1, len(youtube_videos) // len(sections))
-                    start_idx = i * videos_per_section
-                    end_idx = start_idx + videos_per_section
-                    section_youtube = youtube_videos[start_idx:end_idx] if start_idx < len(youtube_videos) else None
+                    # CRITICAL FIX: Check if videos are pre-filtered for this section
+                    has_part_tags = any(f"(PART {section_num})" in video.get('note', '').upper() for video in youtube_videos)
+                    
+                    if has_part_tags:
+                        # Videos are already filtered for this section - use them all
+                        section_youtube = youtube_videos
+                        print(f"[MULTIPART] Using {len(youtube_videos)} pre-filtered YouTube videos for Part {section_num}")
+                    else:
+                        # No part tags - distribute evenly across all sections
+                        videos_per_section = max(1, len(youtube_videos) // len(sections))
+                        start_idx = i * videos_per_section
+                        end_idx = start_idx + videos_per_section
+                        section_youtube = youtube_videos[start_idx:end_idx] if start_idx < len(youtube_videos) else None
+                        if section_youtube:
+                            print(f"[MULTIPART] Distributing {len(section_youtube)} YouTube videos to Part {section_num}")
                 
                 # Process this section
                 part_video = self._process_section(
@@ -1012,13 +1056,31 @@ class VideoAutomationPipeline:
         print(f"[CONCAT] Writing final video to {output_path}...")
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
+        # Use NVIDIA GPU hardware acceleration for much faster encoding
+        # Explicitly target NVIDIA GPU (important for laptops with dual GPUs)
         final.write_videofile(
             output_path,
             fps=30,
-            codec="libx264",
+            codec="h264_nvenc",  # NVIDIA hardware encoder (was: libx264)
             audio_codec="aac",
             verbose=True,
-            logger='bar'
+            logger='bar',
+            threads=4,  # Use 4 threads for frame processing
+            write_logfile=False,  # Disable log file for speed
+            audio_bufsize=2000,  # Reduce audio buffer to save memory
+            bitrate="5000k",  # Explicit video bitrate (5 Mbps)
+            # NVENC optimization parameters - explicitly target NVIDIA GPU
+            ffmpeg_params=[
+                "-gpu", "0",      # CRITICAL: GPU 0 = NVIDIA RTX 5070 Ti on YOUR laptop
+                "-preset", "p1",  # p1=fastest (was p4) - MoviePy is the bottleneck, not GPU
+                "-rc:v", "vbr",   # Variable bitrate for better quality
+                "-cq:v", "23",    # Constant quality (lower=better, 23 is good balance)
+                "-b:v", "5M",     # Target bitrate 5 Mbps (good for 1080p)
+                "-maxrate:v", "8M",  # Max bitrate cap
+                "-bufsize:v", "10M",  # Buffer size
+                "-pix_fmt", "yuv420p",  # CRITICAL: Proper pixel format to avoid green tint
+                "-b:a", "192k"  # Audio bitrate for better quality
+            ]
         )
         
         # Cleanup
@@ -1028,6 +1090,10 @@ class VideoAutomationPipeline:
             except:
                 pass
         final.close()
+        
+        # Force garbage collection to free memory
+        import gc
+        gc.collect()
         
         return output_path
     

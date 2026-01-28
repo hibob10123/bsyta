@@ -98,7 +98,15 @@ class DirectorV3:
         """
         # Store reddit_screenshots for use in _create_reddit_element
         self.reddit_screenshots = reddit_screenshots or []
-        
+        if self.reddit_screenshots:
+            print(f"[DIRECTOR] Received {len(self.reddit_screenshots)} Reddit screenshots for rendering:")
+            for i, rs in enumerate(self.reddit_screenshots):
+                path = rs.get('path', 'No path')
+                score = rs.get('relevance_score', 0)
+                print(f"   [{i}] {os.path.basename(path)} (score: {score}/10)")
+        else:
+            print(f"[DIRECTOR] WARNING: No Reddit screenshots provided to director!")
+
         # Store youtube_cards
         self.youtube_cards = youtube_cards or []
         
@@ -330,17 +338,49 @@ class DirectorV3:
         temp_audio_path = f"data/temp/{os.path.basename(output_path)}_temp_audio.m4a"
         
         try:
+            # Use NVIDIA GPU hardware acceleration for much faster encoding
+            # Explicitly target NVIDIA GPU (important for laptops with dual GPUs)
+            print(f"\n[ENCODING] Starting NVENC GPU encoding...")
+            print(f"[ENCODING] Codec: h264_nvenc")
+            print(f"[ENCODING] Target GPU: 0 (NVIDIA RTX 5070 Ti)")
+            print(f"[ENCODING] ⚠ If encoding pauses or is very slow:")
+            print(f"[ENCODING]   - Close Chrome/Discord to free RAM")
+            print(f"[ENCODING]   - Disable Windows Defender real-time scanning temporarily")
+            print(f"[ENCODING]   - Check Task Manager → Disk (should be < 100%)")
+            
             final_video.write_videofile(
                 output_path,
                 fps=30,
-                codec="libx264",
+                codec="h264_nvenc",  # NVIDIA hardware encoder (was: libx264)
                 audio_codec="aac",
                 verbose=True,  # Enable progress bar
                 logger='bar',  # Use progress bar logger
                 temp_audiofile=temp_audio_path,
-                remove_temp=False  # Don't auto-remove to avoid Windows locking issues
+                remove_temp=False,  # Don't auto-remove to avoid Windows locking issues
+                threads=4,  # Use 4 threads for frame processing (speeds up MoviePy bottleneck)
+                write_logfile=False,  # Disable log file for slight speed boost
+                audio_bufsize=2000,  # Reduce audio buffer to save memory
+                bitrate="5000k",  # Explicit video bitrate (5 Mbps)
+                # NVENC optimization parameters - explicitly target NVIDIA GPU
+                ffmpeg_params=[
+                    "-gpu", "0",      # CRITICAL: GPU 0 = NVIDIA RTX 5070 Ti on YOUR laptop
+                    "-preset", "p1",  # p1=fastest (was p4) - MoviePy is the bottleneck, not GPU
+                    "-rc:v", "vbr",   # Variable bitrate for better quality
+                    "-cq:v", "23",    # Constant quality (lower=better, 23 is good balance)
+                    "-b:v", "5M",     # Target bitrate 5 Mbps (good for 1080p)
+                    "-maxrate:v", "8M",  # Max bitrate cap
+                    "-bufsize:v", "10M",  # Buffer size
+                    "-pix_fmt", "yuv420p",  # CRITICAL: Proper pixel format to avoid green tint
+                    "-b:a", "192k"  # Audio bitrate for better quality
+                ]
             )
+            
+            print(f"[ENCODING] ✓ Encoding complete!")
         finally:
+            # Force garbage collection to free memory immediately
+            import gc
+            gc.collect()
+            
             # Clean up all clips to release file handles
             clips_to_close = [
                 mixed_audio,
@@ -1424,6 +1464,9 @@ class DirectorV3:
             # Create clips list
             clips = [bg]
             
+            # Track word appearance times for click sound effects
+            word_click_times = []
+            
             # Create SINGLE final text clip (not progressive reveal for long texts)
             # Progressive reveal for ALL statements as requested by user
             if True: # Always use word-by-word reveal
@@ -1431,6 +1474,10 @@ class DirectorV3:
                 for i, word in enumerate(words):
                     current_text = " ".join(words[:i+1])
                     clip_start = start_delay + (i * time_per_word)
+                    
+                    # Store absolute timestamp for click sound (scene start + relative time)
+                    scene_start_time = scene.get('start_time', 0)
+                    word_click_times.append(scene_start_time + clip_start)
                     
                     if i == len(words) - 1:
                         clip_end = duration - 0.2
@@ -1463,6 +1510,13 @@ class DirectorV3:
                         text_clip = text_clip.fadeout(0.3)
                     
                     clips.append(text_clip)
+                
+                # Store click times in scene for SFX engine to use
+                if word_click_times:
+                    if 'word_click_times' not in scene:
+                        scene['word_click_times'] = []
+                    scene['word_click_times'].extend(word_click_times)
+                    print(f"[DIRECTOR] Added {len(word_click_times)} click sound cues for word-by-word animation")
             else:
                 # For longer text (6+ words), just show the full text with zoom animation
                 # This avoids the repetitive word-by-word effect

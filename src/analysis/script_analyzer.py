@@ -238,10 +238,10 @@ class ScriptAnalyzer:
         # Calculate dynamic thresholds based on script length
         word_count = len(script_text.split())
         
-        # Scale keywords VERY aggressively: roughly 1 keyword per 5-8 words for maximum visual coverage
-        # User wants NO GAPS in the video - every second should have something visual!
-        min_keywords = max(15, word_count // 8)  # Increased from 10
-        max_keywords = max(25, word_count // 5)  # Increased from 15
+        # Scale keywords moderately: roughly 1 keyword per 8-10 words for balanced visual coverage
+        # Reduced density to avoid icon spam (35% reduction from aggressive settings)
+        min_keywords = max(15, word_count // 9)  # Reduced from word_count // 6
+        max_keywords = max(25, word_count // 5)  # Reduced from word_count // 3
         
         # Scale segments: roughly 1 segment per 50-100 words
         min_segments = max(2, word_count // 100)

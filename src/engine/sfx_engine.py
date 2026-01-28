@@ -155,6 +155,17 @@ class SFXEngine:
                     'element_type': 'scene_start'
                 })
             
+            # Add click sounds for word-by-word title card animations
+            if scene_type == 'text_statement' and 'word_click_times' in scene:
+                for click_time in scene['word_click_times']:
+                    sfx_events.append({
+                        'timestamp': click_time,
+                        'sfx_type': 'click',
+                        'volume': 0.35,  # Slightly louder than default for clarity
+                        'element_type': 'word_appear'
+                    })
+                print(f"[SFX] Added {len(scene['word_click_times'])} click sounds for word-by-word animation")
+            
             for element in scene.get('elements', []):
                 sfx_type = self._determine_sfx_for_element(element)
                 if sfx_type:

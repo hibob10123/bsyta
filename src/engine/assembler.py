@@ -65,7 +65,7 @@ def create_scene(brawler_name, sentiment_text, evidence_path):
     os.makedirs("data/temp", exist_ok=True)
     
     print("⚙️  Rendering video... (This might take a moment)")
-    final_clip.write_videofile(output_path, fps=24, codec="libx264")
+    final_clip.write_videofile(output_path, fps=24, codec="h264_nvenc")
     print(f"✅ Video saved to {output_path}")
 
 if __name__ == "__main__":

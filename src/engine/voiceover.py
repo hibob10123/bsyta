@@ -2,6 +2,7 @@ import os
 import yaml
 import re
 import time
+import hashlib
 from elevenlabs.client import ElevenLabs
 from elevenlabs import save
 from dotenv import load_dotenv
@@ -78,13 +79,14 @@ def generate_voiceover(text, filename):
         print(f"   [ERROR] ElevenLabs Error: {e}")
         return None
 
-def generate_voiceover_by_sentence(text, base_filename):
+def generate_voiceover_by_sentence(text, base_filename, force_regenerate=False):
     """
     NEW: Generates audio sentence-by-sentence for precise timing.
     
     Args:
         text: Full script text
         base_filename: Base name for output files
+        force_regenerate: If True, regenerate even if cached files exist
     
     Returns:
         dict with:
@@ -97,6 +99,103 @@ def generate_voiceover_by_sentence(text, base_filename):
     # Split into sentences
     sentences = split_into_sentences(text)
     print(f"[VOICE] Split script into {len(sentences)} sentences")
+    
+    # CHECK CACHE: See if we already have these audio files
+    combined_path = f"data/temp/{base_filename}_combined.mp3"
+    cache_info_path = f"data/temp/{base_filename}_cache_info.txt"
+    cache_valid = False
+    
+    # Generate hash of current script text for cache validation
+    text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
+    
+    if not force_regenerate and os.path.exists(combined_path) and os.path.exists(cache_info_path):
+        # Check if cached text hash matches current text
+        try:
+            with open(cache_info_path, 'r', encoding='utf-8') as f:
+                cached_hash = f.read().strip()
+            
+            if cached_hash == text_hash:
+                # Hash matches - check if all sentence files exist
+                all_sentence_files_exist = True
+                for i in range(len(sentences)):
+                    sentence_audio_path = f"data/temp/{base_filename}_sentence_{i+1}.mp3"
+                    if not os.path.exists(sentence_audio_path):
+                        all_sentence_files_exist = False
+                        break
+                
+                if all_sentence_files_exist:
+                    print(f"[VOICE] ✓ CACHE HIT: Found existing voiceover files with matching content!")
+                    print(f"[VOICE] ✓ Reusing cached audio (saves ElevenLabs credits)")
+                    print(f"[VOICE] ℹ To force regeneration, delete: {combined_path}")
+                    cache_valid = True
+                else:
+                    print(f"[VOICE] Cache incomplete (missing sentence files) - regenerating...")
+                    cache_valid = False
+            else:
+                print(f"[VOICE] Script text has CHANGED - regenerating voiceover...")
+                print(f"[VOICE] ℹ Old script hash: {cached_hash[:8]}... | New: {text_hash[:8]}...")
+                cache_valid = False
+        except Exception as e:
+            print(f"[VOICE] Cache validation failed: {e} - regenerating...")
+            cache_valid = False
+    
+    # If cache is valid, load cached data and return early
+    if cache_valid:
+        try:
+            sentence_data = []
+            cumulative_time = 0.0
+            
+            for i in range(len(sentences)):
+                sentence_audio_path = f"data/temp/{base_filename}_sentence_{i+1}.mp3"
+                
+                # Validate file exists and has content
+                if not os.path.exists(sentence_audio_path) or os.path.getsize(sentence_audio_path) < 1000:
+                    print(f"[VOICE] Cached file {i+1} is missing or too small - invalidating cache...")
+                    cache_valid = False
+                    break
+                
+                # Get duration from cached file
+                try:
+                    audio_clip = AudioFileClip(sentence_audio_path)
+                    duration = audio_clip.duration
+                    audio_clip.close()
+                except Exception as e:
+                    print(f"[VOICE] Cached file {i+1} is corrupted: {e}")
+                    print(f"[VOICE] Invalidating cache and regenerating...")
+                    cache_valid = False
+                    break
+                
+                start_time = cumulative_time
+                end_time = cumulative_time + duration
+                
+                sentence_data.append({
+                    'sentence_number': i + 1,
+                    'text': sentences[i],
+                    'audio_path': sentence_audio_path,
+                    'duration': duration,
+                    'start_time': start_time,
+                    'end_time': end_time,
+                    'word_count': len(sentences[i].split())
+                })
+                
+                cumulative_time = end_time
+            
+            if cache_valid:
+                print(f"[VOICE] Total cached duration: {cumulative_time:.2f}s")
+                
+                return {
+                    'sentences': sentence_data,
+                    'total_duration': cumulative_time,
+                    'combined_audio_path': combined_path
+                }
+        except Exception as e:
+            print(f"[VOICE] Error loading cache: {e}")
+            print(f"[VOICE] Invalidating cache and regenerating...")
+            cache_valid = False
+    elif not force_regenerate and os.path.exists(combined_path):
+        print(f"[VOICE] Found old cache without validation info - regenerating for safety...")
+    
+    print(f"[VOICE] No cache found or cache incomplete - generating fresh audio...")
     
     # Initialize client
     client = ElevenLabs(api_key=API_KEY)
@@ -198,6 +297,14 @@ def generate_voiceover_by_sentence(text, base_filename):
     except Exception as e:
         print(f"[VOICE] ERROR concatenating audio: {e}")
         return None
+    
+    # Save cache validation info (text hash)
+    try:
+        with open(cache_info_path, 'w', encoding='utf-8') as f:
+            f.write(text_hash)
+        print(f"[VOICE] Saved cache validation info")
+    except Exception as e:
+        print(f"[VOICE] Warning: Could not save cache info: {e}")
     
     return {
         'sentences': sentence_data,

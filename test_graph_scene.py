@@ -261,7 +261,7 @@ def test_graph_scene_rendering():
         scene_clip.write_videofile(
             output_path,
             fps=30,
-            codec='libx264',
+            codec='h264_nvenc',
             audio=False
         )
         print(f"[OK] Test video saved: {output_path}")

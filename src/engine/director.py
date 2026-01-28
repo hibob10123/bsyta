@@ -155,7 +155,7 @@ def render_video(brawler_name, full_script):
     final_movie.write_videofile(
         output_filename, 
         fps=30, 
-        codec="libx264", 
+        codec="h264_nvenc", 
         audio_codec="aac",
         verbose=False,
         logger=None

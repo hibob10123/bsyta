@@ -46,8 +46,8 @@ sound_effects:
 
 background_music:
   enabled: true
-  path: "data/sfx/(SONG1).mp3"  # Default/primary music file
-  volume: 0.2  # Volume relative to voiceover (0.0-1.0, lower = quieter)
+  path: "data/sfx/(SONG5).mp3"  # Default/primary music file
+  volume: 0.3  # Volume relative to voiceover (0.0-1.0, lower = quieter)
   # Additional music files for multi-part videos (rotates through these)
   music_files:
     - "data/sfx/(SONG1).mp3"
@@ -75,7 +75,13 @@ pipeline:
   # Search Context (Customizable)
   # This is added to every icon search query to ensure relevant results
   # Example: "Clash Royale", "Brawl Stars", "Minecraft"
-  search_context: "Clash Royale"
+  search_context: "Brawl Stars"
+  
+  # Icon download rate limiting
+  # Increase delays if you're hitting rate limits (seeing many text fallbacks)
+  icon_download_delay: 0.8  # Seconds to wait between each keyword download (default: 0.8)
+  icon_retry_delay: 2.0     # Seconds to wait before retrying a failed download (default: 2.0)
+  icon_max_retries: 3       # Maximum number of retries per search query (default: 3)
   
   # Reddit settings
   reddit_max_posts: 8

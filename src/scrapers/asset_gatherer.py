@@ -16,29 +16,42 @@ class AssetGatherer:
     def __init__(self, assets_dir="data/assets"):
         self.assets_dir = assets_dir
         self.icons_dir = os.path.join(assets_dir, "icons")
+        self.manual_icons_dir = os.path.join(assets_dir, "manual_icons")
         os.makedirs(self.icons_dir, exist_ok=True)
+        os.makedirs(self.manual_icons_dir, exist_ok=True)
         
-        # Load global search context from config
+        # Load global search context and rate limiting settings from config
         self.global_context = ""
+        self.download_delay = 0.8  # Default: 0.8s between keyword downloads
+        self.retry_delay = 2.0     # Default: 2.0s before retrying failures
+        self.max_retries = 3       # Default: 3 retries per query
+        self.last_download_time = 0  # Track when we last downloaded to enforce delay
+        
         try:
             with open('config.yaml', 'r') as f:
                 config = yaml.safe_load(f)
-                self.global_context = config.get('pipeline', {}).get('search_context', '')
+                pipeline_config = config.get('pipeline', {})
+                self.global_context = pipeline_config.get('search_context', '')
+                self.download_delay = pipeline_config.get('icon_download_delay', 0.8)
+                self.retry_delay = pipeline_config.get('icon_retry_delay', 2.0)
+                self.max_retries = pipeline_config.get('icon_max_retries', 3)
+                
                 if self.global_context:
                     print(f"[ASSETS] Global search context: '{self.global_context}'")
+                print(f"[ASSETS] Rate limiting: {self.download_delay}s delay between downloads, {self.retry_delay}s retry delay")
         except Exception as e:
-            print(f"[ASSETS] Could not load search context from config: {e}")
+            print(f"[ASSETS] Could not load config: {e}")
     
     def find_icon(self, keyword, context="", sentence_context="", force_redownload=False):
         """
         Find an icon for a keyword
-        Searches local assets first, then downloads from web
+        Searches manual overrides first, then local assets, then downloads from web
         
         Args:
             keyword: The word/concept to find an icon for
             context: Main subject context (e.g., "Brawl Stars", "Clash Royale")
             sentence_context: The full sentence where this keyword appears
-            force_redownload: If True, skip local cache and download fresh
+            force_redownload: If True, skip local cache and download fresh (but NOT manual overrides)
         
         Returns:
             Path to icon file
@@ -52,6 +65,13 @@ class AssetGatherer:
                 search_context = self.global_context
 
         print(f"[ASSETS] Looking for icon: {keyword} (Context: {search_context})")
+        
+        # 0. HIGHEST PRIORITY: Check manual_icons directory for hand-picked overrides
+        # Manual overrides are NEVER skipped, even with force_redownload
+        manual_path = self._check_manual_override(keyword)
+        if manual_path:
+            print(f"[ASSETS] ✓ Using MANUAL override: {manual_path}")
+            return manual_path
         
         # 1. Check if we already have this icon locally (unless force redownload)
         if not force_redownload:
@@ -80,6 +100,35 @@ class AssetGatherer:
         # 4. Last resort: create placeholder
         print(f"[ASSETS] Creating placeholder for: {keyword}")
         return self._create_placeholder(keyword)
+    
+    def _check_manual_override(self, keyword):
+        """
+        Check manual_icons directory for hand-picked, high-quality icons
+        This has HIGHEST priority - if a manual icon exists, it's ALWAYS used
+        
+        Args:
+            keyword: The keyword to search for
+            
+        Returns:
+            Path to manual icon file if found, None otherwise
+        """
+        # Normalize keyword for filename matching
+        # Replace spaces with underscores, lowercase
+        keyword_normalized = keyword.lower().replace(" ", "_").replace("-", "_")
+        
+        # Try exact match with common extensions
+        for ext in ['.png', '.jpg', '.jpeg', '.webp']:
+            manual_path = os.path.join(self.manual_icons_dir, f"{keyword_normalized}{ext}")
+            if os.path.exists(manual_path):
+                return manual_path
+        
+        # Also try the original keyword without normalization (in case user named it differently)
+        for ext in ['.png', '.jpg', '.jpeg', '.webp']:
+            manual_path = os.path.join(self.manual_icons_dir, f"{keyword.lower()}{ext}")
+            if os.path.exists(manual_path):
+                return manual_path
+        
+        return None
     
     def _find_local_icon(self, keyword):
         """Search local icons directory"""
@@ -131,71 +180,104 @@ class AssetGatherer:
             context_info = f"\nMain topic: {context}" if context else ""
             sentence_info = f"\nFull sentence: \"{sentence_context}\"" if sentence_context else ""
             
-            prompt = f"""Generate an image search query to find the RIGHT icon for this keyword in context.
+            prompt = f"""Generate an image search query to find the RIGHT icon for this keyword.
 
 KEYWORD: "{keyword}"{context_info}{sentence_info}
 
-ABSOLUTE RULES:
-1. If there's a game context (like "Clash Royale"), ALWAYS include the game name in your search
-2. NEVER return generic searches that could match unrelated things
-3. Use the EXACT keyword spelling/name - don't interpret or change it
+CRITICAL CONTEXT RULES:
+=======================
+🎯 ONLY add game context (like "Clash Royale" or "Brawl Stars") for game-specific terms.
+🚫 DO NOT add game context for universal emotions, concepts, or general vocabulary.
 
-CATEGORY DETECTION (pick ONE):
+When to ADD game context:
+✅ In-game items/currency: "Power Points", "Coins", "Gems", "Elite Wild Cards", "Pass Royale"
+✅ Game characters: "Shelly", "Edgar", "Colt", "Mortis", "Mega Knight"
+✅ Game features: "Hypercharge", "Star Power", "Gadget", "Evolution", "Mastery"
+✅ Game levels: "Level 15", "maxed", "King Tower"
+✅ Game modes/locations: "Ranked", "Trophy Road", "Brawl Ball"
+
+When to SKIP game context (use generic search):
+❌ Universal emotions: "angry", "furious", "excited", "frustrated", "thrilled", "devastated"
+❌ Abstract concepts: "nightmare", "crisis", "peak", "record", "death spiral", "trap"
+❌ General actions: "revolted", "collapsed", "resurrected", "dominated", "dying", "decline"
+❌ Question words: "why", "question", "confusion", "problem", "doubt"
+❌ Common objects: "fire", "trophy", "money", "dollar", "math"
+❌ Social terms: "subreddit", "community", "creators", "players"
+
+CATEGORY DETECTION:
 
 A) YOUTUBER/STREAMER/CONTENT CREATOR:
-   Names like: B-Rad, Jynxzi, KairosTime, MrBeast, xQc, Ninja, Shroud, OJ (Orange Juice Gaming)
+   Names like: B-Rad, Jynxzi, KairosTime, MrBeast, xQc, Ninja, Shroud
    → "[EXACT name] YouTuber face" or "[EXACT name] streamer"
    Examples:
    - "B-Rad" → "B-Rad Clash Royale YouTuber"
    - "Jynxzi" → "Jynxzi streamer face"
    - "KairosTime" → "KairosTime Brawl Stars YouTuber"
-   - "OJ" (Clash context) → "Orange Juice Gaming Clash Royale YouTuber"
 
 B) GAME NAME/TITLE:
    → "[EXACT game name] logo official"
    - "Clash Royale" → "Clash Royale logo official"
    - "Brawl Stars" → "Brawl Stars logo official"
 
-C) IN-GAME ITEM/CURRENCY/FEATURE (with game context):
+C) IN-GAME ITEM/CURRENCY/FEATURE (REQUIRES game context):
    → "[GAME NAME] [EXACT item name] icon"
    Examples:
-   - "Elite Wild Cards" + Clash Royale → "Clash Royale Elite Wild Card item icon"
-   - "Pass Royale" + Clash Royale → "Clash Royale Pass Royale season pass icon"
-   - "gems" + Clash Royale → "Clash Royale gems currency icon"
-   - "Star Points" + Brawl Stars → "Brawl Stars Star Points icon"
+   - "Elite Wild Cards" → "Clash Royale Elite Wild Card item icon"
+   - "Pass Royale" → "Clash Royale Pass Royale season pass icon"
+   - "Power Points" → "Brawl Stars Power Points currency icon"
+   - "Hypercharge" → "Brawl Stars Hypercharge icon"
 
-D) GAME LEVEL/RANK/NUMBER:
-   → "[GAME NAME] level [number]" or "[GAME NAME] king tower level"
+D) GAME LEVEL/RANK/NUMBER (REQUIRES game context):
+   → "[GAME NAME] level [number]"
    Examples:
-   - "level 15" + Clash Royale → "Clash Royale king tower level 15"
-   - "level 14" + Clash Royale → "Clash Royale max level king tower"
-   - "maxed" + Brawl Stars → "Brawl Stars max level power 11"
+   - "level 15" → "Clash Royale king tower level 15"
+   - "maxed" → "Brawl Stars max level power 11"
 
-E) GAME CHARACTER/TROOP/CARD:
-   → "[GAME NAME] [character name] png"
-   - "Mega Knight" + Clash Royale → "Clash Royale Mega Knight card"
-   - "Shelly" + Brawl Stars → "Brawl Stars Shelly brawler"
+E) GAME CHARACTER/TROOP/CARD (REQUIRES game context):
+   → "[GAME NAME] [character name] official art"
+   - "Mega Knight" → "Clash Royale Mega Knight card"
+   - "Shelly" → "Brawl Stars Shelly brawler"
+   - "Edgar" → "Brawl Stars Edgar brawler"
 
-F) MONEY/REVENUE/FINANCIAL:
-   → "money dollar bills icon" or "revenue chart icon green"
-   - "revenue" → "money revenue green icon"
-   - "profit" → "profit money icon"
+F) UNIVERSAL EMOTIONS (NO game context):
+   → "[emotion] face icon" or "[emotion] emoji simple"
+   - "angry" → "angry face icon red"
+   - "furious" → "furious angry icon"
+   - "frustrated" → "frustrated icon simple"
+   - "excited" → "excited happy icon"
 
-G) NEGATIVE/DECLINE WORDS:
-   → Use decline symbols, NOT the literal word
+G) ABSTRACT CONCEPTS (NO game context):
+   → "[concept] icon simple" or relevant symbol
+   - "nightmare" → "nightmare icon scary"
+   - "crisis" → "crisis warning icon red"
+   - "trap" → "trap icon danger"
+   - "death spiral" → "downward spiral icon red"
+
+H) DECLINE/NEGATIVE WORDS (NO game context):
+   → Use universal decline symbols
    - "dying" → "downward trend red arrow icon"
    - "decline" → "graph declining red icon"
-   - "evaporated" → "disappearing smoke icon"
-   - "dropped" → "down arrow red icon"
+   - "revolted" → "protest fist icon angry"
+   - "collapsed" → "collapse broken icon"
 
-H) POSITIVE/SUCCESS WORDS:
+I) POSITIVE/SUCCESS WORDS (NO game context):
    - "record" → "trophy gold icon"
    - "peak" → "mountain peak icon"
+   - "resurrected" → "resurrection phoenix icon"
 
-I) OTHER - If none of the above, search: "[keyword] icon cartoon simple"
+J) QUESTION/CONFUSION (NO game context):
+   - "why" → "question mark icon"
+   - "question" → "question mark icon blue"
+   - "confusion" → "confused question mark icon"
 
-CRITICAL: Your search must return images SPECIFIC to the keyword, not generic results.
-If keyword is game-related and you have a game context, you MUST include the game name.
+K) OTHER - Generic search: "[keyword] icon simple"
+
+EXAMPLE OUTPUTS:
+- "Power Points" + Brawl Stars → "Brawl Stars Power Points currency icon" (game-specific item)
+- "angry" + Brawl Stars → "angry face icon red" (universal emotion, NO game context)
+- "Shelly" + Brawl Stars → "Brawl Stars Shelly brawler" (game character)
+- "nightmare" + Clash Royale → "nightmare icon scary" (universal concept, NO game context)
+- "revolted" + Clash Royale → "protest revolt fist icon" (universal action, NO game context)
 
 Return ONLY the search query, nothing else."""
 
@@ -335,6 +417,15 @@ Return ONLY the search query, nothing else."""
         Returns:
             Path to downloaded icon or None
         """
+        # Rate limiting: Enforce delay between keyword downloads
+        time_since_last = time.time() - self.last_download_time
+        if time_since_last < self.download_delay:
+            wait_time = self.download_delay - time_since_last
+            print(f"[ASSETS] Rate limiting: waiting {wait_time:.1f}s before next download...")
+            time.sleep(wait_time)
+        
+        self.last_download_time = time.time()
+        
         # Generate multiple search queries to try
         # 1. Claude-generated (optimized for context)
         # 2. Context + keyword explicitly  
@@ -368,7 +459,8 @@ Return ONLY the search query, nothing else."""
                 print("[ASSETS] Serper unavailable, using DuckDuckGo fallback")
                 
                 try:
-                    time.sleep(1.5)  # Delay to avoid rate limiting
+                    # Use configured retry delay
+                    time.sleep(self.retry_delay)
                     
                     with DDGS() as ddgs:
                         results = list(ddgs.images(
@@ -388,7 +480,7 @@ Return ONLY the search query, nothing else."""
             # Try downloading from results, skipping watermarked sources
             attempts = 0
             for i, result in enumerate(results):
-                if attempts >= 3:  # Only try 3 downloads per query
+                if attempts >= self.max_retries:  # Use configured max retries
                     break
                     
                 try:
@@ -403,11 +495,13 @@ Return ONLY the search query, nothing else."""
                         continue
                     
                     attempts += 1
-                    print(f"[ASSETS] Trying download {attempts}/3: {image_url[:50]}...")
+                    print(f"[ASSETS] Trying download {attempts}/{self.max_retries}: {image_url[:50]}...")
                     
-                    # Small delay between download attempts
+                    # Exponential backoff between download attempts
                     if attempts > 1:
-                        time.sleep(0.5)
+                        backoff_delay = min(self.retry_delay * (2 ** (attempts - 2)), 10.0)  # Max 10s
+                        print(f"[ASSETS] Waiting {backoff_delay:.1f}s before retry...")
+                        time.sleep(backoff_delay)
                     
                     # Download with headers to avoid blocks
                     headers = {
@@ -441,7 +535,12 @@ Return ONLY the search query, nothing else."""
             print(f"[ASSETS] Downloads failed for query {query_idx + 1}, trying next query...")
         
         # All queries exhausted
-        print(f"[ASSETS] All search queries failed for {keyword}")
+        print(f"[ASSETS] ⚠️  All search queries failed for '{keyword}'")
+        print(f"[ASSETS] This keyword will display as text instead of an icon")
+        print(f"[ASSETS] If you're seeing many failures, try:")
+        print(f"[ASSETS]   1. Increase 'icon_download_delay' in config.yaml (current: {self.download_delay}s)")
+        print(f"[ASSETS]   2. Check your internet connection")
+        print(f"[ASSETS]   3. Verify Serper API key is valid (if enabled)")
         return None
     
     def download_and_process(self, url, keyword):

@@ -410,24 +410,32 @@ Return ONLY the JSON."""
                 browser.close()
                 return {'quote': '', 'is_title': True}
     
-    def screenshot_with_highlight(self, post_url, quote_text=None, output_path=None):
+    def screenshot_with_highlight(self, post_url, quote_text=None, output_path=None, force_regenerate=False):
         """
         Screenshot a Reddit post and optionally highlight a specific quote
-        
+
         Args:
             post_url: URL to screenshot
             quote_text: Optional text to highlight
             output_path: Where to save (default: data/assets/reddit_{timestamp}.png)
-        
+            force_regenerate: If True, regenerate even if screenshot already exists
+
         Returns:
             Path to screenshot file
         """
         if output_path is None:
             timestamp = int(time.time())
             output_path = f"data/assets/reddit_{timestamp}.png"
-        
+
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        
+
+        # CHECK CACHE: Skip if screenshot already exists
+        if not force_regenerate and os.path.exists(output_path):
+            print(f"[REDDIT] ✓ CACHE HIT: Screenshot already exists at {output_path}")
+            print(f"[REDDIT] ✓ Skipping download (saves time)")
+            print(f"[REDDIT] ℹ To force regeneration, delete the file or use force_regenerate=True")
+            return output_path
+
         print(f"[REDDIT] Screenshotting post...")
         
         with sync_playwright() as p:
